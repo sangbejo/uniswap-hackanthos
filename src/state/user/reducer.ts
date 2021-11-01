@@ -1,5 +1,7 @@
-import { INITIAL_ALLOWED_SLIPPAGE, DEFAULT_DEADLINE_FROM_NOW } from '../../constants'
 import { createReducer } from '@reduxjs/toolkit'
+import { SupportedLocale } from 'constants/locales'
+
+import { DEFAULT_DEADLINE_FROM_NOW } from '../../constants/misc'
 import { updateVersion } from '../global/actions'
 import {
   addSerializedPair,
@@ -8,30 +10,42 @@ import {
   removeSerializedToken,
   SerializedPair,
   SerializedToken,
+  updateArbitrumAlphaAcknowledged,
+  updateHideClosedPositions,
   updateMatchesDarkMode,
+  updateOptimismAlphaAcknowledged,
+  updateUserClientSideRouter,
   updateUserDarkMode,
-  updateUserExpertMode,
-  updateUserSlippageTolerance,
   updateUserDeadline,
-  toggleURLWarning,
-  updateUserSingleHopOnly
+  updateUserExpertMode,
+  updateUserLocale,
+  updateUserSlippageTolerance,
 } from './actions'
 
 const currentTimestamp = () => new Date().getTime()
 
 export interface UserState {
+  arbitrumAlphaAcknowledged: boolean
+
   // the timestamp of the last updateVersion action
   lastUpdateVersionTimestamp?: number
 
-  userDarkMode: boolean | null // the user's choice for dark mode or light mode
   matchesDarkMode: boolean // whether the dark mode media query matches
+  optimismAlphaAcknowledged: boolean
+
+  userDarkMode: boolean | null // the user's choice for dark mode or light mode
+  userLocale: SupportedLocale | null
 
   userExpertMode: boolean
 
-  userSingleHopOnly: boolean // only allow swaps on direct pairs
+  userClientSideRouter: boolean // whether routes should be calculated with the client side router only
+
+  // hides closed (inactive) positions across the app
+  userHideClosedPositions: boolean
 
   // user defined slippage tolerance in bips, used in all txns
-  userSlippageTolerance: number
+  userSlippageTolerance: number | 'auto'
+  userSlippageToleranceHasBeenMigratedToAuto: boolean // temporary flag for migration status
 
   // deadline set by user in minutes, used in all txns
   userDeadline: number
@@ -58,30 +72,53 @@ function pairKey(token0Address: string, token1Address: string) {
 }
 
 export const initialState: UserState = {
-  userDarkMode: null,
+  arbitrumAlphaAcknowledged: false,
   matchesDarkMode: false,
+  optimismAlphaAcknowledged: false,
+  userDarkMode: null,
   userExpertMode: false,
-  userSingleHopOnly: false,
-  userSlippageTolerance: INITIAL_ALLOWED_SLIPPAGE,
+  userLocale: null,
+  userClientSideRouter: false,
+  userHideClosedPositions: false,
+  userSlippageTolerance: 'auto',
+  userSlippageToleranceHasBeenMigratedToAuto: true,
   userDeadline: DEFAULT_DEADLINE_FROM_NOW,
   tokens: {},
   pairs: {},
   timestamp: currentTimestamp(),
-  URLWarningVisible: true
+  URLWarningVisible: true,
 }
 
-export default createReducer(initialState, builder =>
+export default createReducer(initialState, (builder) =>
   builder
-    .addCase(updateVersion, state => {
+    .addCase(updateVersion, (state) => {
       // slippage isnt being tracked in local storage, reset to default
       // noinspection SuspiciousTypeOfGuard
-      if (typeof state.userSlippageTolerance !== 'number') {
-        state.userSlippageTolerance = INITIAL_ALLOWED_SLIPPAGE
+      if (
+        typeof state.userSlippageTolerance !== 'number' ||
+        !Number.isInteger(state.userSlippageTolerance) ||
+        state.userSlippageTolerance < 0 ||
+        state.userSlippageTolerance > 5000
+      ) {
+        state.userSlippageTolerance = 'auto'
+      } else {
+        if (
+          !state.userSlippageToleranceHasBeenMigratedToAuto &&
+          [10, 50, 100].indexOf(state.userSlippageTolerance) !== -1
+        ) {
+          state.userSlippageTolerance = 'auto'
+          state.userSlippageToleranceHasBeenMigratedToAuto = true
+        }
       }
 
       // deadline isnt being tracked in local storage, reset to default
       // noinspection SuspiciousTypeOfGuard
-      if (typeof state.userDeadline !== 'number') {
+      if (
+        typeof state.userDeadline !== 'number' ||
+        !Number.isInteger(state.userDeadline) ||
+        state.userDeadline < 60 ||
+        state.userDeadline > 180 * 60
+      ) {
         state.userDeadline = DEFAULT_DEADLINE_FROM_NOW
       }
 
@@ -95,8 +132,18 @@ export default createReducer(initialState, builder =>
       state.matchesDarkMode = action.payload.matchesDarkMode
       state.timestamp = currentTimestamp()
     })
+    .addCase(updateArbitrumAlphaAcknowledged, (state, action) => {
+      state.arbitrumAlphaAcknowledged = action.payload.arbitrumAlphaAcknowledged
+    })
+    .addCase(updateOptimismAlphaAcknowledged, (state, action) => {
+      state.optimismAlphaAcknowledged = action.payload.optimismAlphaAcknowledged
+    })
     .addCase(updateUserExpertMode, (state, action) => {
       state.userExpertMode = action.payload.userExpertMode
+      state.timestamp = currentTimestamp()
+    })
+    .addCase(updateUserLocale, (state, action) => {
+      state.userLocale = action.payload.userLocale
       state.timestamp = currentTimestamp()
     })
     .addCase(updateUserSlippageTolerance, (state, action) => {
@@ -107,8 +154,11 @@ export default createReducer(initialState, builder =>
       state.userDeadline = action.payload.userDeadline
       state.timestamp = currentTimestamp()
     })
-    .addCase(updateUserSingleHopOnly, (state, action) => {
-      state.userSingleHopOnly = action.payload.userSingleHopOnly
+    .addCase(updateUserClientSideRouter, (state, action) => {
+      state.userClientSideRouter = action.payload.userClientSideRouter
+    })
+    .addCase(updateHideClosedPositions, (state, action) => {
+      state.userHideClosedPositions = action.payload.userHideClosedPositions
     })
     .addCase(addSerializedToken, (state, { payload: { serializedToken } }) => {
       if (!state.tokens) {
@@ -144,8 +194,5 @@ export default createReducer(initialState, builder =>
         delete state.pairs[chainId][pairKey(tokenBAddress, tokenAAddress)]
       }
       state.timestamp = currentTimestamp()
-    })
-    .addCase(toggleURLWarning, state => {
-      state.URLWarningVisible = !state.URLWarningVisible
     })
 )

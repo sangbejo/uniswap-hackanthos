@@ -1,5 +1,7 @@
-import { JSBI, Token, TokenAmount } from '@uniswap/sdk'
-import { BigNumber } from 'ethers'
+import { BigNumber } from '@ethersproject/bignumber'
+import { CurrencyAmount, Token } from '@uniswap/sdk-core'
+import JSBI from 'jsbi'
+
 import { STAKING_GENESIS } from '../state/stake/hooks'
 
 const STAKING_END = STAKING_GENESIS + 60 * 60 * 24 * 60
@@ -56,8 +58,8 @@ function withVesting(before: JSBI, time: BigNumber, amount: number, start: numbe
 export function computeUniCirculation(
   uni: Token,
   blockTimestamp: BigNumber,
-  unclaimedUni: TokenAmount | undefined
-): TokenAmount {
+  unclaimedUni: CurrencyAmount<Token> | undefined
+): CurrencyAmount<Token> {
   let wholeAmount = JSBI.BigInt(USERS_AMOUNT)
 
   // staking rewards
@@ -107,6 +109,9 @@ export function computeUniCirculation(
   wholeAmount = withVesting(wholeAmount, blockTimestamp, TEAM_YEAR_3_AMOUNT, TREASURY_BEGIN_YEAR_3, TREASURY_END_YEAR_3)
   wholeAmount = withVesting(wholeAmount, blockTimestamp, TEAM_YEAR_4_AMOUNT, TREASURY_BEGIN_YEAR_4, TREASURY_END_YEAR_4)
 
-  const total = new TokenAmount(uni, JSBI.multiply(wholeAmount, JSBI.exponentiate(JSBI.BigInt(10), JSBI.BigInt(18))))
+  const total = CurrencyAmount.fromRawAmount(
+    uni,
+    JSBI.multiply(wholeAmount, JSBI.exponentiate(JSBI.BigInt(10), JSBI.BigInt(18)))
+  )
   return unclaimedUni ? total.subtract(unclaimedUni) : total
 }
