@@ -1,6 +1,5 @@
-import { namehash } from '@ethersproject/hash'
+import { namehash } from 'ethers/lib/utils'
 import { useMemo } from 'react'
-
 import { useSingleCallResult } from '../state/multicall/hooks'
 import { isAddress } from '../utils'
 import isZero from '../utils/isZero'
@@ -33,6 +32,6 @@ export default function useENSName(address?: string): { ENSName: string | null; 
   const changed = debouncedAddress !== address
   return {
     ENSName: changed ? null : name.result?.[0] ?? null,
-    loading: changed || resolverAddress.loading || name.loading,
+    loading: changed || resolverAddress.loading || name.loading
   }
 }

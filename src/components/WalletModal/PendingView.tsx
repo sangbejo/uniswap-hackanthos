@@ -1,12 +1,11 @@
-import { Trans } from '@lingui/macro'
 import { AbstractConnector } from '@web3-react/abstract-connector'
-import { darken } from 'polished'
-import styled from 'styled-components/macro'
-
-import { injected } from '../../connectors'
-import { SUPPORTED_WALLETS } from '../../constants/wallet'
-import Loader from '../Loader'
+import React from 'react'
+import styled from 'styled-components'
 import Option from './Option'
+import { SUPPORTED_WALLETS } from '../../constants'
+import { injected } from '../../connectors'
+import { darken } from 'polished'
+import Loader from '../Loader'
 
 const PendingSection = styled.div`
   ${({ theme }) => theme.flexColumnNoWrap};
@@ -68,7 +67,7 @@ export default function PendingView({
   connector,
   error = false,
   setPendingError,
-  tryActivation,
+  tryActivation
 }: {
   connector?: AbstractConnector
   error?: boolean
@@ -83,27 +82,25 @@ export default function PendingView({
         <LoadingWrapper>
           {error ? (
             <ErrorGroup>
-              <div>
-                <Trans>Error connecting</Trans>
-              </div>
+              <div>Error connecting.</div>
               <ErrorButton
                 onClick={() => {
                   setPendingError(false)
                   connector && tryActivation(connector)
                 }}
               >
-                <Trans>Try Again</Trans>
+                Try Again
               </ErrorButton>
             </ErrorGroup>
           ) : (
             <>
               <StyledLoader />
-              <Trans>Initializing...</Trans>
+              Initializing...
             </>
           )}
         </LoadingWrapper>
       </LoadingMessage>
-      {Object.keys(SUPPORTED_WALLETS).map((key) => {
+      {Object.keys(SUPPORTED_WALLETS).map(key => {
         const option = SUPPORTED_WALLETS[key]
         if (option.connector === connector) {
           if (option.connector === injected) {
@@ -122,7 +119,7 @@ export default function PendingView({
               color={option.color}
               header={option.name}
               subheader={option.description}
-              icon={option.iconURL}
+              icon={require('../../assets/images/' + option.iconName)}
             />
           )
         }

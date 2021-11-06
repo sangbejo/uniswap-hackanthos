@@ -1,22 +1,19 @@
-import { useEffect, useState } from 'react'
-import { useAppSelector } from 'state/hooks'
-import styled, { keyframes } from 'styled-components/macro'
+import React, { useState, useEffect } from 'react'
+import styled, { keyframes } from 'styled-components'
+import { TYPE, ExternalLink } from '../../theme'
 
-import { useActiveWeb3React } from '../../hooks/web3'
 import { useBlockNumber } from '../../state/application/hooks'
-import { ExternalLink, TYPE } from '../../theme'
-import { ExplorerDataType, getExplorerLink } from '../../utils/getExplorerLink'
-import { ChainConnectivityWarning } from './ChainConnectivityWarning'
+import { getEtherscanLink } from '../../utils'
+import { useActiveWeb3React } from '../../hooks'
 
-const StyledPolling = styled.div<{ warning: boolean }>`
+const StyledPolling = styled.div`
   position: fixed;
   display: flex;
   align-items: center;
   right: 0;
   bottom: 0;
   padding: 1rem;
-  color: ${({ theme, warning }) => (warning ? theme.yellow3 : theme.green1)};
-  transition: 250ms ease color;
+  color: ${({ theme }) => theme.green1};
 
   ${({ theme }) => theme.mediaWidth.upToMedium`
     display: none;
@@ -24,20 +21,20 @@ const StyledPolling = styled.div<{ warning: boolean }>`
 `
 const StyledPollingNumber = styled(TYPE.small)<{ breathe: boolean; hovering: boolean }>`
   transition: opacity 0.25s ease;
-  opacity: ${({ breathe, hovering }) => (hovering ? 0.7 : breathe ? 1 : 0.5)};
+  opacity: ${({ breathe, hovering }) => (hovering ? 0.7 : breathe ? 1 : 0.2)};
   :hover {
     opacity: 1;
   }
 `
-const StyledPollingDot = styled.div<{ warning: boolean }>`
+const StyledPollingDot = styled.div`
   width: 8px;
   height: 8px;
   min-height: 8px;
   min-width: 8px;
+  margin-left: 0.5rem;
   border-radius: 50%;
   position: relative;
-  background-color: ${({ theme, warning }) => (warning ? theme.yellow3 : theme.green1)};
-  transition: 250ms ease background-color;
+  background-color: ${({ theme }) => theme.green1};
 `
 
 const rotate360 = keyframes`
@@ -49,20 +46,19 @@ const rotate360 = keyframes`
   }
 `
 
-const Spinner = styled.div<{ warning: boolean }>`
+const Spinner = styled.div`
   animation: ${rotate360} 1s cubic-bezier(0.83, 0, 0.17, 1) infinite;
   transform: translateZ(0);
 
   border-top: 1px solid transparent;
   border-right: 1px solid transparent;
   border-bottom: 1px solid transparent;
-  border-left: 2px solid ${({ theme, warning }) => (warning ? theme.yellow3 : theme.green1)};
+  border-left: 2px solid ${({ theme }) => theme.green1};
   background: transparent;
   width: 14px;
   height: 14px;
   border-radius: 50%;
   position: relative;
-  transition: 250ms ease border-color;
 
   left: -3px;
   top: -3px;
@@ -70,10 +66,11 @@ const Spinner = styled.div<{ warning: boolean }>`
 
 export default function Polling() {
   const { chainId } = useActiveWeb3React()
+
   const blockNumber = useBlockNumber()
+
   const [isMounting, setIsMounting] = useState(false)
   const [isHover, setIsHover] = useState(false)
-  const chainConnectivityWarning = useAppSelector((state) => state.application.chainConnectivityWarning)
 
   useEffect(
     () => {
@@ -94,24 +91,13 @@ export default function Polling() {
   )
 
   return (
-    <>
-      <ExternalLink
-        href={chainId && blockNumber ? getExplorerLink(chainId, blockNumber.toString(), ExplorerDataType.BLOCK) : ''}
-      >
-        <StyledPolling
-          onMouseEnter={() => setIsHover(true)}
-          onMouseLeave={() => setIsHover(false)}
-          warning={chainConnectivityWarning}
-        >
-          <StyledPollingNumber breathe={isMounting} hovering={isHover}>
-            {blockNumber}&ensp;
-          </StyledPollingNumber>
-          <StyledPollingDot warning={chainConnectivityWarning}>
-            {isMounting && <Spinner warning={chainConnectivityWarning} />}
-          </StyledPollingDot>{' '}
-        </StyledPolling>
-      </ExternalLink>
-      {chainConnectivityWarning && <ChainConnectivityWarning />}
-    </>
+    <ExternalLink href={chainId && blockNumber ? getEtherscanLink(chainId, blockNumber.toString(), 'block') : ''}>
+      <StyledPolling onMouseEnter={() => setIsHover(true)} onMouseLeave={() => setIsHover(false)}>
+        <StyledPollingNumber breathe={isMounting} hovering={isHover}>
+          {blockNumber}
+        </StyledPollingNumber>
+        <StyledPollingDot>{isMounting && <Spinner />}</StyledPollingDot>
+      </StyledPolling>
+    </ExternalLink>
   )
 }

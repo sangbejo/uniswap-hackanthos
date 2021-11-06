@@ -1,18 +1,17 @@
-import { Trans } from '@lingui/macro'
-import { Token } from '@uniswap/sdk-core'
-import { ButtonPrimary } from 'components/Button'
+import React, { CSSProperties } from 'react'
+import { Token } from '@uniswap/sdk'
+import { AutoRow, RowFixed } from 'components/Row'
 import { AutoColumn } from 'components/Column'
 import CurrencyLogo from 'components/CurrencyLogo'
-import ListLogo from 'components/ListLogo'
-import { AutoRow, RowFixed } from 'components/Row'
-import { useIsTokenActive, useIsUserAddedToken } from 'hooks/Tokens'
-import useTheme from 'hooks/useTheme'
-import { CSSProperties } from 'react'
-import { CheckCircle } from 'react-feather'
-import styled from 'styled-components/macro'
 import { TYPE } from 'theme'
-
-import { WrappedTokenInfo } from '../../state/lists/wrappedTokenInfo'
+import ListLogo from 'components/ListLogo'
+import { useActiveWeb3React } from 'hooks'
+import { useCombinedInactiveList } from 'state/lists/hooks'
+import useTheme from 'hooks/useTheme'
+import { ButtonPrimary } from 'components/Button'
+import styled from 'styled-components'
+import { useIsUserAddedToken, useIsTokenActive } from 'hooks/Tokens'
+import { CheckCircle } from 'react-feather'
 
 const TokenSection = styled.div<{ dim?: boolean }>`
   padding: 4px 20px;
@@ -46,7 +45,7 @@ export default function ImportRow({
   style,
   dim,
   showImportView,
-  setImportToken,
+  setImportToken
 }: {
   token: Token
   style?: CSSProperties
@@ -54,13 +53,17 @@ export default function ImportRow({
   showImportView: () => void
   setImportToken: (token: Token) => void
 }) {
+  // gloabls
+  const { chainId } = useActiveWeb3React()
   const theme = useTheme()
+
+  // check if token comes from list
+  const inactiveTokenList = useCombinedInactiveList()
+  const list = chainId && inactiveTokenList?.[chainId]?.[token.address]?.list
 
   // check if already active on list or local storage tokens
   const isAdded = useIsUserAddedToken(token)
   const isActive = useIsTokenActive(token)
-
-  const list = token instanceof WrappedTokenInfo ? token.list : undefined
 
   return (
     <TokenSection style={style}>
@@ -75,7 +78,7 @@ export default function ImportRow({
         {list && list.logoURI && (
           <RowFixed>
             <TYPE.small mr="4px" color={theme.text3}>
-              <Trans>via {list.name} </Trans>
+              via {list.name}
             </TYPE.small>
             <ListLogo logoURI={list.logoURI} size="12px" />
           </RowFixed>
@@ -92,14 +95,12 @@ export default function ImportRow({
             showImportView()
           }}
         >
-          <Trans>Import</Trans>
+          Import
         </ButtonPrimary>
       ) : (
         <RowFixed style={{ minWidth: 'fit-content' }}>
           <CheckIcon />
-          <TYPE.main color={theme.green1}>
-            <Trans>Active</Trans>
-          </TYPE.main>
+          <TYPE.main color={theme.green1}>Active</TYPE.main>
         </RowFixed>
       )}
     </TokenSection>

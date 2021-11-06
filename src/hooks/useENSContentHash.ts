@@ -1,6 +1,5 @@
-import { namehash } from '@ethersproject/hash'
+import { namehash } from 'ethers/lib/utils'
 import { useMemo } from 'react'
-
 import { useSingleCallResult } from '../state/multicall/hooks'
 import isZero from '../utils/isZero'
 import { useENSRegistrarContract, useENSResolverContract } from './useContract'
@@ -28,6 +27,6 @@ export default function useENSContentHash(ensName?: string | null): { loading: b
 
   return {
     contenthash: contenthash.result?.[0] ?? null,
-    loading: resolverAddressResult.loading || contenthash.loading,
+    loading: resolverAddressResult.loading || contenthash.loading
   }
 }
