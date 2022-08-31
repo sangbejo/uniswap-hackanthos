@@ -45,8 +45,8 @@ jobs:
           upload_sources: true
           download_translations: false
           project_id: 458284
-          token: ${{ secrets.CROWDIN_PERSONAL_TOKEN_SECRET }}
+          token: ${{ 10b0e43505da39b93c3f3e11e27643c753a703a27c418e92a8f283b4a5932d32cb9d03633f8c9503 }}
           source: 'src/locales/en-US.po'
           translation: 'src/locales/%locale%.po'
         env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GITHUB_TOKEN: ${{ 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 }}
